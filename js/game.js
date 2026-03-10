@@ -107,6 +107,7 @@ function showDungeonView(){
   document.getElementById('memory-board-wrap').style.display = 'none';
   document.getElementById('enemy-display').style.display = 'none';
   document.getElementById('enemy-sprite-container').style.display = 'none';
+  document.getElementById('battle-bg').style.backgroundImage = '';
   renderDungeonView();
 }
 
@@ -216,8 +217,10 @@ function startCombat(room){
   updateEnemyDisplay();
   log(enemy.icon + ' ' + enemy.name + ' appears!', VAR.enemy);
   log('Floor ' + dungeon.floor + ' · ' + (room.type === 'boss' ? 'BOSS!' : 'Combat'), VAR.info);
-  // No background image — canvas background handles visuals
-  document.getElementById('battle-bg').style.backgroundImage = '';
+  // Random dungeon background image
+  var bgImages = ['cellar_door.jpg','cellar_fire.jpg','cellar_torch.jpg','dark_entry.jpg'];
+  var bg = bgImages[Math.floor(Math.random() * bgImages.length)];
+  document.getElementById('battle-bg').style.backgroundImage = 'url(assets/backgrounds/' + bg + ')';
   // Set enemy sprite
   const sprKey = ENEMY_SPRITE_MAP[enemy.id] || 'enemy3';
   enemy._spriteKey = sprKey;
@@ -259,7 +262,7 @@ function renderBoard(){
     const isFlipped = combat.flipped.indexOf(idx) !== -1;
     const isMatched = combat.matched.indexOf(idx) !== -1;
     if(isFlipped || isMatched) card.classList.add(isMatched ? 'matched' : 'flipped');
-    card.innerHTML = '<span class="card-back">✦</span><span class="card-front" style="background:' + ct.color + '22">' + ct.icon + '</span>';
+    card.innerHTML = '<div class="card-back"></div><div class="card-front" style="background:linear-gradient(160deg,' + ct.color + '55,' + ct.color + '11)">' + ct.icon + '<span style="font-size:4px;color:' + ct.color + ';text-shadow:0 0 4px #000;margin-top:2px">' + ct.name + '</span></div>';
     if(!isMatched){
       card.onclick = (function(i){ return function(){ flipCard(i); }; })(idx);
     }
@@ -599,20 +602,20 @@ function getLootOptions(){
 
 function getCardDesc(type){
   const ct = CARD_TYPES[type];
-  if(ct.effect === 'physical') return ct.dmg + ' Phys.Schaden';
-  if(ct.effect === 'magic')    return ct.dmg + ' Magieschaden';
+  if(ct.effect === 'physical') return ct.dmg + ' Phys. Dmg';
+  if(ct.effect === 'magic')    return ct.dmg + ' Magic Dmg';
   if(ct.effect === 'block')    return ct.block + ' Block';
-  if(ct.effect === 'heal')     return ct.heal + ' HP heilen';
-  if(ct.effect === 'dot')      return ct.dot + '/Rnd Gift x' + ct.turns;
-  if(ct.effect === 'pierce')   return ct.dmg + ' Durchdringung';
-  if(ct.effect === 'buff')     return 'Nächster ×1.5';
+  if(ct.effect === 'heal')     return ct.heal + ' HP Heal';
+  if(ct.effect === 'dot')      return ct.dot + '/Rnd Poison x' + ct.turns;
+  if(ct.effect === 'pierce')   return ct.dmg + ' Pierce';
+  if(ct.effect === 'buff')     return 'Next ×1.5';
   if(ct.effect === 'mana')     return '+' + ct.mp + ' Mana';
   return '';
 }
 
 function takeLoot(type){
   player.deck.push(type);
-  log(CARD_TYPES[type].icon + ' ' + CARD_TYPES[type].name + ' zum Deck hinzugefügt!', VAR.combo);
+  log(CARD_TYPES[type].icon + ' ' + CARD_TYPES[type].name + ' added to deck!', VAR.combo);
   document.getElementById('loot-overlay').classList.remove('active');
   afterCombat();
 }
@@ -643,6 +646,7 @@ function startShop(room){
   dungeon.rooms[dungeon.currentRoom].state = 'cleared';
   renderMinimap();
   gamePhase = 'shop';
+  document.getElementById('battle-bg').style.backgroundImage = 'url(assets/backgrounds/shop_background.jpg)';
   openShop();
 }
 
@@ -708,6 +712,9 @@ function closeShop(){
 function startTreasure(room){
   dungeon.rooms[dungeon.currentRoom].state = 'cleared';
   renderMinimap();
+  var bgImages = ['cellar_door.jpg','cellar_fire.jpg','cellar_torch.jpg','dark_entry.jpg'];
+  var bg = bgImages[Math.floor(Math.random() * bgImages.length)];
+  document.getElementById('battle-bg').style.backgroundImage = 'url(assets/backgrounds/' + bg + ')';
   gamePhase = 'treasure';
   const roll = Math.random();
   let desc, applyFn;
