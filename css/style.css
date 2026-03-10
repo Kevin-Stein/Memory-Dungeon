@@ -61,9 +61,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 /* battle background */
 #battle-bg{position:absolute;inset:0;
-  background-size:cover;background-position:center;background-repeat:no-repeat;
+  background-size:contain;background-position:center top;background-repeat:no-repeat;
   overflow:hidden}
-#battle-bg::after{content:'';position:absolute;inset:0;background:rgba(4,2,0,0.52)}
+#battle-bg::after{content:'';position:absolute;inset:0;background:rgba(4,2,0,0.45)}
 
 /* enemy display */
 #enemy-display{position:absolute;top:6px;left:0;right:0;display:flex;
