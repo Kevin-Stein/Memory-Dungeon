@@ -9,9 +9,11 @@
   --phys:#ff9944;--magic:#cc88ff;--heal:#44dd88;
   --def:#4488ff;--enemy:#ff4444;--combo:#ffcc00;--info:#6688aa;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);
+html,body{height:100%;height:100dvh;background:var(--bg);color:var(--text);
   font-family:'Press Start 2P',monospace;font-size:10px;
-  overflow:hidden;image-rendering:pixelated}
+  overflow:hidden;image-rendering:pixelated;
+  padding-top:env(safe-area-inset-top);
+  padding-bottom:env(safe-area-inset-bottom)}
 
 /* scanlines */
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
@@ -254,3 +256,134 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:#0e0a04}
 ::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE — MOBILE
+   ══════════════════════════════════════════════ */
+
+/* Touch-friendly tap targets */
+button,.card,.action-btn,.room-node,.inv-slot,.quick-item,.shop-item,.loot-card-btn{
+  touch-action:manipulation}
+
+/* Tablet / small laptop — compress side panels */
+@media(max-width:900px){
+  #game{grid-template-columns:130px 1fr 160px}
+  html,body{font-size:9px}
+  #hero-portrait{font-size:28px}
+  .action-btn{font-size:7px;padding:3px 2px}
+}
+
+/* Portrait phone — full restructure */
+@media(max-width:600px){
+  html,body{font-size:8px;overflow:hidden}
+
+  /* Stack vertically: right-panel top → center fills rest */
+  #game{
+    display:flex;flex-direction:column;
+    height:100vh;height:100dvh;
+    gap:0
+  }
+
+  /* Hide left panel (inventory/minimap) */
+  #left-panel{display:none}
+
+  /* Right panel becomes compact top HUD */
+  #right-panel{
+    order:-1;
+    flex-direction:row;flex-wrap:wrap;
+    align-items:center;
+    padding:3px 5px;gap:3px;
+    height:auto;flex-shrink:0;
+    max-height:40vw;overflow:hidden;
+    border-bottom:2px solid var(--border)
+  }
+
+  /* Hide less critical right-panel sections */
+  #portrait-frame{display:none}
+  #stats-grid{display:none}
+  #status-effects{display:none}
+  #item-quickuse{display:none}
+
+  /* HP/MP bars side by side */
+  .stat-bar-row{flex:1;min-width:130px;margin-bottom:2px}
+  .bar-label{font-size:5px}
+  .bar-track{height:7px}
+
+  /* Action buttons full-width row */
+  #action-slots{
+    width:100%;
+    grid-template-columns:repeat(4,1fr);
+    gap:3px;margin-bottom:0
+  }
+  .action-btn{
+    font-size:11px;padding:5px 2px;aspect-ratio:unset;height:32px
+  }
+  .action-btn .btn-label{font-size:3.5px}
+
+  /* Center panel fills remaining screen */
+  #center-panel{flex:1;min-height:0}
+
+  /* Viewport log shorter on mobile */
+  #viewport-log{min-height:32px}
+  .vlog-line{font-size:5.5px}
+
+  /* Cards — slightly taller for touch */
+  .card{max-height:38px;font-size:12px}
+
+  /* Resource bar */
+  #center-bottom{height:22px;padding:2px 5px}
+  .resource{font-size:5px}
+  .resource-icon{font-size:10px}
+
+  /* Enemy HP bar wider */
+  #enemy-hp-bar-wrap{width:160px}
+
+  /* Overlays: scrollable on mobile */
+  .overlay{padding:8px;gap:5px;overflow-y:auto}
+  .overlay-title{font-size:8px;margin-bottom:2px}
+
+  /* Loot buttons wrap nicely */
+  .loot-card-btn{min-width:60px;padding:5px}
+  .loot-card-btn .loot-icon{font-size:20px}
+
+  /* Shop items touch-friendly */
+  .shop-item{padding:6px}
+  .shop-item .shop-icon{font-size:20px}
+
+  /* Room nodes in dungeon view */
+  .room-node{width:38px;height:38px;font-size:7px}
+  .room-node .room-type-icon{font-size:12px}
+
+  /* Title screen */
+  .title-logo{font-size:10px}
+
+  /* Floating damage */
+  .float-dmg{font-size:9px}
+}
+
+/* Landscape phone — keep 3 columns but compress */
+@media(max-height:450px) and (orientation:landscape){
+  #game{grid-template-columns:110px 1fr 140px}
+  html,body{font-size:8px}
+
+  #hero-portrait{font-size:22px}
+  #portrait-frame{padding:3px;gap:2px;margin-bottom:2px}
+  #stats-grid{grid-template-columns:1fr 1fr;gap:1px}
+  .stat-cell{font-size:4px;padding:1px 2px}
+  .stat-bar-row{margin-bottom:2px}
+  .bar-track{height:6px}
+
+  #action-slots{gap:2px;margin-bottom:2px}
+  .action-btn{padding:2px;font-size:7px;height:auto}
+  .action-btn .btn-label{font-size:3px}
+
+  .card{max-height:24px;font-size:9px}
+  #center-bottom{height:20px;padding:2px 4px}
+
+  .inv-slot{font-size:11px}
+  #minimap-section{padding-top:2px}
+  .mm-cell{width:10px;height:10px}
+
+  #viewport-log{min-height:28px}
+  .vlog-line{font-size:5px}
+}
