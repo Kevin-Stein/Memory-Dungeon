@@ -29,7 +29,7 @@ function initSounds(){
     click:      'game%20start%20click.mp3',
     coin:       'selling_buying_coin.mp3',
   };
-  const base = '../assets/sounds/';
+  const base = 'assets/sounds/';
   Object.entries(defs).forEach(function([k,f]){
     SFX[k] = new Audio(base+f);
     SFX[k].preload='auto';

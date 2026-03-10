@@ -49,28 +49,28 @@ const VAR = {phys:'#ff9944',magic:'#cc88ff',heal:'#44dd88',def:'#4488ff',enemy:'
 // ── SPRITE DATA ──
 const SPRITE_DATA = {
   bat: {
-    basePath: '../assets/Enemys/Bat/Bat%20without%20VFX/',
+    basePath: 'assets/Enemys/Bat/Bat%20without%20VFX/',
     fw:64, fh:64, scale:3,
     idle:   {file:'Bat-IdleFly.png', frames:9, fps:10},
     hurt:   {file:'Bat-Hurt.png',    frames:5, fps:12},
     attack: {file:'Bat-Attack1.png', frames:8, fps:12},
   },
   mushroom: {
-    basePath: '../assets/Enemys/Mushroom/Mushroom%20without%20VFX/',
+    basePath: 'assets/Enemys/Mushroom/Mushroom%20without%20VFX/',
     fw:80, fh:64, scale:3,
     idle:   {file:'Mushroom-Idle.png',   frames:7, fps:8},
     hurt:   {file:'Mushroom-Hit.png',    frames:5, fps:12},
     attack: {file:'Mushroom-Attack.png', frames:10,fps:12},
   },
   golem: {
-    basePath: '../assets/Enemys/Golem_1/Blue/No_Swoosh_VFX/',
+    basePath: 'assets/Enemys/Golem_1/Blue/No_Swoosh_VFX/',
     fw:90, fh:64, scale:3,
     idle:   {file:'Golem_1_idle.png',   frames:8, fps:8},
     hurt:   {file:'Golem_1_hurt.png',   frames:4, fps:12},
     attack: {file:'Golem_1_attack.png', frames:11,fps:12},
   },
   enemy3: {
-    basePath: '../assets/Enemys/Forrestenemys/Enemy3-No-Movement-In-Animation/',
+    basePath: 'assets/Enemys/Forrestenemys/Enemy3-No-Movement-In-Animation/',
     fw:64, fh:64, scale:3,
     idle:   {file:'Enemy3No-Move-Idle.png',           frames:8, fps:8},
     hurt:   {file:'Enemy3No-Move-Hit-NoVFX.png',      frames:4, fps:12},
