@@ -82,8 +82,8 @@ function startGame(){
   hideAllOverlays();
   initSounds();
   playMusic('menu');
-  log('Willkommen im Dungeon!', VAR.info);
-  log('Etage 1 beginnt...', VAR.info);
+  log('Welcome to the dungeon!', VAR.info);
+  log('Floor 1 begins...', VAR.info);
   renderAll();
   showDungeonView();
 }
@@ -96,7 +96,7 @@ function nextFloor(){
   dungeon = initDungeon(dungeon.floor + 1);
   gamePhase = 'dungeon';
   hideAllOverlays();
-  log('Etage ' + dungeon.floor + ' betreten!', VAR.info);
+  log('Entering floor ' + dungeon.floor + '!', VAR.info);
   renderAll();
   showDungeonView();
 }
@@ -118,9 +118,11 @@ function hideDungeonView(){
 }
 
 function renderDungeonView(){
-  document.getElementById('floor-label').textContent = 'ETAGE ' + dungeon.floor;
+  document.getElementById('floor-label').textContent = 'FLOOR ' + dungeon.floor;
   const path = document.getElementById('room-path');
   path.innerHTML = '';
+  // Find last cleared room for lock logic
+  const lastCleared = dungeon.rooms.reduce(function(a,r,i){ return r.state==='cleared'?i:a; }, -1);
   dungeon.rooms.forEach(function(room, i){
     if(i > 0){
       const conn = document.createElement('div');
@@ -129,12 +131,12 @@ function renderDungeonView(){
     }
     const node = document.createElement('div');
     node.className = 'room-node';
-    if(room.state === 'current') node.classList.add('current');
-    else if(room.state === 'cleared') node.classList.add('cleared');
-    else if(i > dungeon.currentRoom + 1 || (room.state === 'unknown' && i > dungeon.currentRoom)) node.classList.add('locked');
+    if(room.state === 'cleared') node.classList.add('cleared');
+    else if(i === lastCleared + 1 || (lastCleared === -1 && i === 0)) node.classList.add('current');
+    else if(i > lastCleared + 1) node.classList.add('locked');
 
     const typeIcons = {combat:'⚔️', treasure:'💰', shop:'🛒', boss:'💀'};
-    const typeNames = {combat:'KAMPF', treasure:'SCHATZ', shop:'LADEN', boss:'BOSS'};
+    const typeNames = {combat:'COMBAT', treasure:'CHEST', shop:'SHOP', boss:'BOSS'};
     node.innerHTML = '<span class="room-type-icon">' + typeIcons[room.type] + '</span><span style="font-size:5px">' + typeNames[room.type] + '</span>';
 
     if(room.state !== 'cleared' && i <= dungeon.currentRoom + 1 && !(i > dungeon.currentRoom + 1)){
@@ -158,7 +160,9 @@ function renderDungeonView(){
 function enterRoom(idx){
   const room = dungeon.rooms[idx];
   if(!room || room.state === 'cleared') return;
-  if(idx > dungeon.currentRoom && room.state !== 'current') return;
+  // Allow entering any room up to one beyond the last cleared room
+  const lastCleared = dungeon.rooms.reduce(function(a,r,i){ return r.state==='cleared'?i:a; }, -1);
+  if(idx > lastCleared + 1) return;
 
   dungeon.currentRoom = idx;
   dungeon.rooms[idx].state = 'current';
@@ -210,8 +214,8 @@ function startCombat(room){
   combat = initCombat();
   generateBoard();
   updateEnemyDisplay();
-  log(enemy.icon + ' ' + enemy.name + ' erscheint!', VAR.enemy);
-  log('Etage ' + dungeon.floor + ' · ' + (room.type === 'boss' ? 'BOSS!' : 'Kampf'), VAR.info);
+  log(enemy.icon + ' ' + enemy.name + ' appears!', VAR.enemy);
+  log('Floor ' + dungeon.floor + ' · ' + (room.type === 'boss' ? 'BOSS!' : 'Combat'), VAR.info);
   // No background image — canvas background handles visuals
   document.getElementById('battle-bg').style.backgroundImage = '';
   // Set enemy sprite
@@ -289,7 +293,7 @@ function flipCard(idx){
       combat.locked = true;
       combat.combo = 0;
       combat.misses++;
-      log('Kein Paar! (' + combat.misses + '/3 Fehler)', VAR.info);
+      log('No match! (' + combat.misses + '/3 misses)', VAR.info);
       updateMissesDisplay();
       setTimeout(function(){
         combat.flipped = [];
@@ -322,7 +326,7 @@ function applyCardEffect(type){
       const def = enemy.def || 0;
       const dmg = Math.max(1, raw - def);
       dealDamageToEnemy(dmg, 'physical');
-      log('⚔ ' + ct.name + ': ' + dmg + ' Schaden (Rüstung -' + def + ')', VAR.phys);
+      log('⚔ ' + ct.name + ': ' + dmg + ' dmg (Armor -' + def + ')', VAR.phys);
       break;
     }
     case 'magic':{
@@ -330,41 +334,41 @@ function applyCardEffect(type){
       const res = enemy.magRes || 0;
       const dmg = Math.max(1, raw - res);
       dealDamageToEnemy(dmg, 'magic');
-      log('✨ ' + ct.name + ': ' + dmg + ' Magieschaden', VAR.magic);
+      log('✨ ' + ct.name + ': ' + dmg + ' magic dmg', VAR.magic);
       if(ct.slow && ct.slow > 0){
         combat.enemySlowed = ct.slow;
-        log('❄ Feind verlangsamt (' + ct.slow + ' Runden)', VAR.def);
+        log('❄ Enemy slowed (' + ct.slow + ' rounds)', VAR.def);
       }
       break;
     }
     case 'block':{
       const b = Math.round((ct.block + player.def) * mult);
       combat.playerBlock = (combat.playerBlock || 0) + b;
-      log('🛡 ' + ct.name + ': +' + b + ' Block (gesamt: ' + combat.playerBlock + ')', VAR.def);
+      log('🛡 ' + ct.name + ': +' + b + ' Block (total: ' + combat.playerBlock + ')', VAR.def);
       renderStats();
       break;
     }
     case 'heal':{
       const h = Math.round(ct.heal * mult);
       healPlayer(h);
-      log('💚 Heilung: +' + h + ' HP', VAR.heal);
+      log('💚 Heal: +' + h + ' HP', VAR.heal);
       break;
     }
     case 'dot':{
       enemy.statusEffects = enemy.statusEffects || [];
       enemy.statusEffects.push({type:'poison', value:ct.dot, turns:ct.turns});
-      log('☠ Gift! ' + ct.dot + ' pro Runde × ' + ct.turns, VAR.magic);
+      log('☠ Poison! ' + ct.dot + ' per round × ' + ct.turns, VAR.magic);
       break;
     }
     case 'pierce':{
       const raw = Math.round((ct.dmg + player.atk) * mult);
       dealDamageToEnemy(raw, 'physical');
-      log('🏹 Durchdringung: ' + raw + ' Schaden (ignoriert Rüstung)', VAR.phys);
+      log('🏹 Pierce: ' + raw + ' dmg (ignores armor)', VAR.phys);
       break;
     }
     case 'buff':{
       combat.buffActive = true;
-      log('⭐ Nächster Effekt ×1.5!', VAR.combo);
+      log('⭐ Next effect ×1.5!', VAR.combo);
       break;
     }
     case 'mana':{
@@ -373,7 +377,7 @@ function applyCardEffect(type){
       break;
     }
   }
-  if(combat.combo >= 2) log('✦ KOMBO ×' + combat.combo + '!', VAR.combo);
+  if(combat.combo >= 2) log('✦ COMBO ×' + combat.combo + '!', VAR.combo);
   checkCombatEnd();
   renderAll();
 }
@@ -400,12 +404,12 @@ function enemyCounterAttack(){
   if(block > 0){
     combat.playerBlock = Math.max(0, block - (atk - player.def));
     if(combat.playerBlock < 0) combat.playerBlock = 0;
-    log('🛡 Block absorbiert ' + Math.min(block, atk) + ' Schaden!', VAR.def);
+    log('🛡 Block absorbs ' + Math.min(block, atk) + ' damage!', VAR.def);
   }
   if(dmg > 0){
     player.hp = Math.max(0, player.hp - dmg);
     playSound('getDamage');
-    log(enemy.icon + ' Gegenangriff: ' + dmg + ' Schaden!', VAR.enemy);
+    log(enemy.icon + ' counter: ' + dmg + ' damage!', VAR.enemy);
     floatNumber('-' + dmg, '#ff4444', false);
     const rp = document.getElementById('right-panel');
     rp.classList.remove('shake');
@@ -413,7 +417,7 @@ function enemyCounterAttack(){
     rp.classList.add('shake');
     setTimeout(function(){ rp.classList.remove('shake'); }, 400);
   } else {
-    log(enemy.icon + ' Gegenangriff: GEBLOCKT!', VAR.def);
+    log(enemy.icon + ' counter: BLOCKED!', VAR.def);
   }
   renderStats();
   checkCombatEnd();
@@ -421,7 +425,7 @@ function enemyCounterAttack(){
 
 function checkBoardComplete(){
   if(combat.matched.length >= combat.board.length){
-    log('Alle Paare gefunden! Runde endet...', VAR.info);
+    log('All pairs found! Round ends...', VAR.info);
     setTimeout(function(){ endTurn(); }, 500);
   }
 }
@@ -433,7 +437,7 @@ function endTurn(){
     enemy.statusEffects = enemy.statusEffects.filter(function(s){
       if(s.type === 'poison'){
         enemy.hp = Math.max(0, enemy.hp - s.value);
-        log('☠ Giftschaden: ' + s.value + ' an ' + enemy.icon, VAR.magic);
+        log('☠ Poison: ' + s.value + ' on ' + enemy.icon, VAR.magic);
         s.turns--;
         return s.turns > 0;
       }
@@ -445,7 +449,7 @@ function endTurn(){
   // Troll regen
   if(enemy.regen){
     enemy.hp = Math.min(enemy.maxHp, enemy.hp + enemy.regen);
-    log('🧌 Troll regeneriert ' + enemy.regen + ' HP', VAR.info);
+    log('🪨 Golem regenerates ' + enemy.regen + ' HP', VAR.info);
     updateEnemyDisplay();
   }
   // Enemy attack
@@ -453,29 +457,29 @@ function endTurn(){
   if(combat.enemySlowed > 0){
     combat.enemySlowed--;
     dmg = Math.round(dmg * 0.5);
-    log('❄ Feind verlangsamt: halber Angriff', VAR.def);
+    log('❄ Enemy slowed: half attack', VAR.def);
   }
   const block = combat.playerBlock || 0;
   const finalDmg = Math.max(0, dmg - player.def - block);
   if(block > 0){
     combat.playerBlock = Math.max(0, block - (dmg - player.def));
     if(combat.playerBlock < 0) combat.playerBlock = 0;
-    log('🛡 Block absorbiert Schaden!', VAR.def);
+    log('🛡 Block absorbs damage!', VAR.def);
   }
   if(finalDmg > 0){
     if(enemy.lifesteal){
       const healed = Math.round(finalDmg * enemy.lifesteal);
       enemy.hp = Math.min(enemy.maxHp, enemy.hp + healed);
-      log('🧛 Lebensraub: +' + healed + ' HP für ' + enemy.icon, VAR.enemy);
+      log('🧛 Lifesteal: +' + healed + ' HP for ' + enemy.icon, VAR.enemy);
       updateEnemyDisplay();
     }
     player.hp = Math.max(0, player.hp - finalDmg);
     playSound('getDamage');
     playAttackAnim(enemy._spriteKey || 'enemy3');
-    log(enemy.icon + ' greift an: ' + finalDmg + ' Schaden!', VAR.enemy);
+    log(enemy.icon + ' attacks: ' + finalDmg + ' damage!', VAR.enemy);
     floatNumber('-' + finalDmg, '#ff4444', false);
   } else {
-    log(enemy.icon + ' greift an: GEBLOCKT!', VAR.def);
+    log(enemy.icon + ' attacks: BLOCKED!', VAR.def);
   }
 
   // Apply player status effects
@@ -491,13 +495,13 @@ function endTurn(){
     renderCombo();
     generateBoard();
     updateEnemyIntent();
-    log('─── Neue Runde ───', VAR.info);
+    log('─── New Round ───', VAR.info);
   }
 }
 
 function waitTurn(){
   if(gamePhase !== 'combat') return;
-  log('Warten... Feind greift an!', VAR.info);
+  log('Wait... enemy attacks!', VAR.info);
   endTurn();
 }
 
@@ -505,17 +509,17 @@ function flee(){
   if(gamePhase !== 'combat') return;
   const chance = 0.4;
   if(Math.random() < chance){
-    log('Erfolgreich geflohen!', VAR.info);
+    log('Escaped successfully!', VAR.info);
     const goldLost = Math.floor(player.gold * 0.1);
     player.gold -= goldLost;
-    if(goldLost > 0) log(goldLost + ' Gold verloren!', VAR.enemy);
+    if(goldLost > 0) log(goldLost + ' Gold lost!', VAR.enemy);
     dungeon.rooms[dungeon.currentRoom].state = 'cleared';
     gamePhase = 'dungeon';
     hideAllOverlays();
     renderAll();
     showDungeonView();
   } else {
-    log('Flucht fehlgeschlagen!', VAR.enemy);
+    log('Escape failed!', VAR.enemy);
     endTurn();
   }
 }
@@ -524,7 +528,7 @@ function applyPlayerStatusEffects(){
   player.statusEffects = player.statusEffects.filter(function(s){
     if(s.type === 'poison'){
       player.hp = Math.max(0, player.hp - s.value);
-      log('☠ Vergiftet: -' + s.value + ' HP', VAR.enemy);
+      log('☠ Poisoned: -' + s.value + ' HP', VAR.enemy);
       s.turns--;
       return s.turns > 0;
     }
@@ -540,7 +544,7 @@ function checkCombatEnd(){
     const goldGain = enemy.goldMin + Math.floor(Math.random() * (enemy.goldMax - enemy.goldMin + 1));
     player.gold += goldGain;
     player.xp   += xpGain;
-    log(enemy.icon + ' besiegt! +' + xpGain + ' XP +' + goldGain + ' Gold', VAR.combo);
+    log(enemy.icon + ' defeated! +' + xpGain + ' XP +' + goldGain + ' Gold', VAR.combo);
     checkLevelUp();
     dungeon.rooms[dungeon.currentRoom].state = 'cleared';
     renderMinimap();
@@ -564,13 +568,13 @@ function checkLevelUp(){
     player.hp = Math.min(player.hp + 10, player.maxHp);
     player.atk += 2;
     player.mag += 2;
-    log('✨ LEVEL UP! Jetzt Stufe ' + player.level + '!', VAR.combo);
+    log('✨ LEVEL UP! Now level ' + player.level + '!', VAR.combo);
   }
 }
 
 // ─── LOOT ─────────────────────────────────────────────
 function showLootOverlay(xp, gold){
-  document.getElementById('loot-xp-line').textContent = '+' + xp + ' Erfahrung';
+  document.getElementById('loot-xp-line').textContent = '+' + xp + ' XP';
   document.getElementById('loot-gold-line').textContent = '+' + gold + ' Gold';
   const opts = getLootOptions();
   const container = document.getElementById('loot-options');
@@ -628,7 +632,7 @@ function afterCombat(){
     return;
   }
   if(allCleared){
-    log('Etage ' + dungeon.floor + ' abgeschlossen!', VAR.combo);
+    log('Floor ' + dungeon.floor + ' cleared!', VAR.combo);
   }
   renderAll();
   showDungeonView();
@@ -649,12 +653,12 @@ function openShop(){
   // Items
   Object.entries(ITEMS_DEF).forEach(function([key, item]){
     addShopRow(grid, item.icon, item.name, item.desc, item.cost, function(){
-      if(player.gold < item.cost){ log('Zu wenig Gold!', VAR.enemy); return; }
+      if(player.gold < item.cost){ log('Not enough gold!', VAR.enemy); return; }
       player.gold -= item.cost;
       playSound('coin');
       if(item.type === 'consume'){
         player.inventory[key] = (player.inventory[key] || 0) + 1;
-        log(item.icon + ' ' + item.name + ' gekauft!', VAR.info);
+        log(item.icon + ' ' + item.name + ' purchased!', VAR.info);
       } else {
         item.use(player);
       }
@@ -667,19 +671,19 @@ function openShop(){
     const ct   = CARD_TYPES[type];
     const cost = SHOP_CARD_COSTS[type];
     addShopRow(grid, ct.icon, ct.name, getCardDesc(type), cost, function(){
-      if(player.gold < cost){ log('Zu wenig Gold!', VAR.enemy); return; }
+      if(player.gold < cost){ log('Not enough gold!', VAR.enemy); return; }
       player.gold -= cost;
       playSound('coin');
       player.deck.push(type);
-      log(ct.icon + ' ' + ct.name + ' zum Deck hinzugefügt!', VAR.info);
+      log(ct.icon + ' ' + ct.name + ' added to deck!', VAR.info);
       document.getElementById('shop-gold-display').textContent = player.gold;
       renderAll();
     });
   });
   // Remove card option
-  addShopRow(grid, '🗑', 'Karte entfernen', 'Entferne eine Karte (min. 8)', 15, function(){
-    if(player.gold < 15){ log('Zu wenig Gold!', VAR.enemy); return; }
-    if(player.deck.length <= 8){ log('Deck hat min. 8 Karten!', VAR.enemy); return; }
+  addShopRow(grid, '🗑', 'Remove Card', 'Remove a card (min. 8)', 15, function(){
+    if(player.gold < 15){ log('Not enough gold!', VAR.enemy); return; }
+    if(player.deck.length <= 8){ log('Deck needs min. 8 cards!', VAR.enemy); return; }
     openDeckRemove();
   });
   document.getElementById('shop-overlay').classList.add('active');
@@ -710,16 +714,16 @@ function startTreasure(room){
   if(roll < 0.4){
     const gold = 20 + Math.floor(Math.random() * 30);
     desc = '💰 ' + gold + ' Gold!';
-    applyFn = function(){ player.gold += gold; log('Schatz: +' + gold + ' Gold', VAR.combo); };
+    applyFn = function(){ player.gold += gold; log('Treasure: +' + gold + ' Gold', VAR.combo); };
   } else if(roll < 0.7){
     const hp = 15 + Math.floor(Math.random() * 20);
-    desc = '💚 Heiltrank (+' + hp + ' HP)';
-    applyFn = function(){ healPlayer(hp); log('Schatz: +' + hp + ' HP', VAR.heal); };
+    desc = '💚 Health Potion (+' + hp + ' HP)';
+    applyFn = function(){ healPlayer(hp); log('Treasure: +' + hp + ' HP', VAR.heal); };
   } else {
-    desc = '🧪 Zaubertrank!';
+    desc = '🧪 Mana Potion!';
     applyFn = function(){
       player.inventory.manatrank = (player.inventory.manatrank || 0) + 1;
-      log('Schatz: Manatrank gefunden!', VAR.magic);
+      log('Treasure: Mana Potion found!', VAR.magic);
     };
   }
   document.getElementById('treasure-desc').textContent = desc;
@@ -751,15 +755,15 @@ function openDeck(){
     div.innerHTML = '<span class="dc-icon">' + ct.icon + '</span><span>' + ct.name + '</span><span style="margin-left:4px;color:var(--combo)">×' + cnt + '</span>';
     grid.appendChild(div);
   });
-  document.getElementById('deck-count-display').textContent = player.deck.length + ' Karten im Deck';
+  document.getElementById('deck-count-display').textContent = player.deck.length + ' cards in deck';
   document.getElementById('deck-remove-section').innerHTML = '';
   document.getElementById('deck-overlay').classList.add('active');
 }
 
 function openDeckRemove(){
-  if(player.deck.length <= 8){ log('Mindestens 8 Karten!', VAR.enemy); return; }
+  if(player.deck.length <= 8){ log('Need at least 8 cards!', VAR.enemy); return; }
   const container = document.getElementById('deck-remove-section');
-  container.innerHTML = '<div style="font-size:5px;color:var(--dim);width:100%;text-align:center">Wähle eine Karte zum Entfernen (15💰):</div>';
+  container.innerHTML = '<div style="font-size:5px;color:var(--dim);width:100%;text-align:center">Choose a card to remove (15💰):</div>';
   const counts = {};
   player.deck.forEach(function(t){ counts[t] = (counts[t] || 0) + 1; });
   Object.entries(counts).forEach(function([type, cnt]){
@@ -770,12 +774,12 @@ function openDeckRemove(){
     btn.style.padding  = '3px 5px';
     btn.textContent = ct.icon + ' ' + ct.name + ' ×' + cnt;
     btn.onclick = function(){
-      if(player.gold < 15){ log('Zu wenig Gold!', VAR.enemy); return; }
-      if(player.deck.length <= 8){ log('Mindestens 8 Karten!', VAR.enemy); return; }
+      if(player.gold < 15){ log('Not enough gold!', VAR.enemy); return; }
+      if(player.deck.length <= 8){ log('Need at least 8 cards!', VAR.enemy); return; }
       player.gold -= 15;
       const idx = player.deck.indexOf(type);
       player.deck.splice(idx, 1);
-      log(ct.icon + ' ' + ct.name + ' aus Deck entfernt (-15💰)', VAR.info);
+      log(ct.icon + ' ' + ct.name + ' removed from deck (-15💰)', VAR.info);
       closeDeck();
       renderAll();
     };
@@ -805,11 +809,11 @@ function useItem(key){
   const item  = ITEMS_DEF[key];
   if(!item) return;
   const count = player.inventory[key] || 0;
-  if(count <= 0){ log('Keine Tränke mehr!', VAR.enemy); return; }
+  if(count <= 0){ log('No potions left!', VAR.enemy); return; }
   if(item.type !== 'consume') return;
   player.inventory[key]--;
   item.use(player);
-  log(item.icon + ' ' + item.name + ' benutzt!', VAR.heal);
+  log(item.icon + ' ' + item.name + ' used!', VAR.heal);
   renderAll();
 }
 
@@ -857,14 +861,14 @@ function hideAllOverlays(){
 function showGameOver(){
   gamePhase = 'gameover';
   document.getElementById('gameover-msg').textContent =
-    (enemy ? enemy.icon + ' ' + enemy.name : '') + ' hat dich besiegt!\nEtage ' + dungeon.floor + ', Stufe ' + player.level;
+    (enemy ? enemy.icon + ' ' + enemy.name : '') + ' defeated you!\nFloor ' + dungeon.floor + ', Level ' + player.level;
   document.getElementById('gameover-overlay').classList.add('active');
 }
 
 function showVictory(){
   gamePhase = 'victory';
   document.getElementById('victory-msg').textContent =
-    'Du hast alle 5 Etagen bezwungen!\nStufe ' + player.level + ' · ' + player.gold + ' Gold';
+    'You conquered all 5 floors!\nLevel ' + player.level + ' · ' + player.gold + ' Gold';
   document.getElementById('victory-overlay').classList.add('active');
 }
 
@@ -892,7 +896,7 @@ function renderAll(){
   renderQuickItems();
   renderActionButtons(gamePhase === 'combat');
   updateMissesDisplay();
-  document.getElementById('floor-display').textContent = 'Etage ' + (dungeon ? dungeon.floor : 1);
+  document.getElementById('floor-display').textContent = 'Floor ' + (dungeon ? dungeon.floor : 1);
 }
 
 function renderStats(){
@@ -943,14 +947,14 @@ function updateEnemyIntent(){
   if(!enemy) return;
   const atk = (combat && combat.enemySlowed > 0) ? Math.round(enemy.atk * 0.5) : enemy.atk;
   const intentText = enemy.magic
-    ? '→ ✨ Zauber (' + atk + ')'
-    : '→ ⚔️ Angriff (' + atk + ')';
+    ? '→ ✨ Spell (' + atk + ')'
+    : '→ ⚔️ Attack (' + atk + ')';
   document.getElementById('enemy-intent').textContent = intentText;
 }
 
 function updateMissesDisplay(){
   if(!combat) return;
-  document.getElementById('misses-display').textContent = 'Fehler: ' + combat.misses + '/3';
+  document.getElementById('misses-display').textContent = 'Misses: ' + combat.misses + '/3';
 }
 
 function renderInventory(){
