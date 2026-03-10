@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#100a04">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>Dungeon Memory</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Background canvas (behind everything) -->
+  <canvas id="bg-canvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none"></canvas>
+
+  <div id="game" style="position:relative;z-index:1">
+
+    <!-- ═══════════════ LEFT PANEL ═══════════════ -->
+    <div id="left-panel" class="panel">
+      <div class="inv-section">
+        <div class="inv-title">⚗ TRÄNKE</div>
+        <div class="inv-grid" id="inv-potions"></div>
+      </div>
+      <div class="inv-section">
+        <div class="inv-title">🍖 GEGENSTÄNDE</div>
+        <div class="inv-grid" id="inv-items"></div>
+      </div>
+      <div class="inv-section">
+        <div class="inv-title">✦ SONSTIGES</div>
+        <div class="inv-grid" id="inv-other"></div>
+      </div>
+      <div id="minimap-section">
+        <div id="minimap-title">KARTE</div>
+        <div id="minimap"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CENTER PANEL ═══════════════ -->
+    <div id="center-panel" class="panel">
+      <div id="viewport">
+
+        <!-- Battle background (canvas bg renders behind this) -->
+        <div id="battle-bg"></div>
+
+        <!-- Enemy display -->
+        <div id="enemy-display">
+          <div id="enemy-name">---</div>
+          <div id="enemy-hp-bar-wrap">
+            <div id="enemy-hp-bar" style="width:100%"></div>
+            <div id="enemy-hp-text">0/0</div>
+          </div>
+          <div id="enemy-intent"></div>
+        </div>
+
+        <!-- Enemy sprite -->
+        <div id="enemy-sprite-container">
+          <div id="enemy-sprite"></div>
+        </div>
+
+        <!-- Memory board overlay -->
+        <div id="memory-board-wrap">
+          <div id="viewport-log"></div>
+          <div id="memory-board"></div>
+        </div>
+
+        <!-- Dungeon view -->
+        <div id="dungeon-view">
+          <div class="floor-label" id="floor-label">ETAGE 1</div>
+          <div id="room-path"></div>
+          <!-- FIX: next floor button, shown only when all rooms cleared -->
+          <button id="next-floor-btn" class="g-btn g-btn-gold" onclick="nextFloor()" style="display:none;margin-top:12px">Nächste Etage →</button>
+        </div>
+
+        <!-- Loot overlay -->
+        <div class="overlay" id="loot-overlay">
+          <div class="overlay-title">⚔ BEUTE!</div>
+          <div id="loot-xp-line" style="font-size:6px;color:var(--combo)"></div>
+          <div id="loot-gold-line" style="font-size:6px;color:#ffaa22"></div>
+          <div style="font-size:6px;color:var(--dim);margin:4px 0">Wähle eine Karte für dein Deck:</div>
+          <div class="loot-options" id="loot-options"></div>
+          <button class="g-btn" style="margin-top:8px" onclick="skipLoot()">Überspringen</button>
+        </div>
+
+        <!-- Shop overlay — FIX: X close button at top-right, grid scrollable -->
+        <div class="overlay" id="shop-overlay" style="position:absolute">
+          <!-- X close button always visible at top-right -->
+          <button id="shop-close-btn" class="g-btn g-btn-red" onclick="closeShop()">✕</button>
+          <div class="overlay-title">🛒 HÄNDLER</div>
+          <div style="font-size:6px;color:var(--combo);margin-bottom:4px">Gold: <span id="shop-gold-display">0</span></div>
+          <div class="shop-grid" id="shop-grid"></div>
+          <button class="g-btn" style="margin-top:8px;flex-shrink:0" onclick="closeShop()">Verlassen</button>
+        </div>
+
+        <!-- Deck overlay -->
+        <div class="overlay" id="deck-overlay">
+          <div class="overlay-title">📖 KARTENDECK</div>
+          <div style="font-size:5px;color:var(--dim);margin-bottom:4px">
+            <span id="deck-count-display"></span>
+          </div>
+          <div class="deck-grid" id="deck-grid"></div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center" id="deck-remove-section"></div>
+          <button class="g-btn" style="margin-top:8px" onclick="closeDeck()">Schließen</button>
+        </div>
+
+        <!-- Treasure overlay -->
+        <div class="overlay" id="treasure-overlay">
+          <div class="overlay-title">💰 SCHATZKAMMER</div>
+          <div id="treasure-desc" style="font-size:7px;color:var(--combo);text-align:center"></div>
+          <button class="g-btn g-btn-gold" style="margin-top:12px" onclick="closeTreasure()">Mitnehmen!</button>
+        </div>
+
+        <!-- Title overlay -->
+        <div class="overlay active" id="title-overlay">
+          <div class="title-logo">⚔<br>DUNGEON<br>MEMORY<br>⚔</div>
+          <div class="title-sub">Ein Gedächtnis-Rollenspiel</div>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px;align-items:center">
+            <button class="g-btn g-btn-gold" onclick="startGame()">Neues Spiel</button>
+          </div>
+          <div style="font-size:5px;color:var(--dim);margin-top:12px;text-align:center;line-height:2">
+            Decke Kartenpaare auf<br>um Feinde zu bekämpfen!
+          </div>
+        </div>
+
+        <!-- Gameover overlay -->
+        <div class="overlay" id="gameover-overlay">
+          <div class="overlay-title" style="color:#ff4444">☠ TOD ☠</div>
+          <div id="gameover-msg" style="font-size:6px;color:var(--dim);text-align:center"></div>
+          <button class="g-btn g-btn-red" style="margin-top:12px" onclick="startGame()">Nochmal</button>
+        </div>
+
+        <!-- Victory overlay -->
+        <div class="overlay" id="victory-overlay">
+          <div class="overlay-title" style="color:#44dd88">🏆 SIEG!</div>
+          <div id="victory-msg" style="font-size:7px;color:var(--combo);text-align:center"></div>
+          <button class="g-btn g-btn-gold" style="margin-top:12px" onclick="startGame()">Nochmal</button>
+        </div>
+
+      </div><!-- /#viewport -->
+
+      <!-- Center bottom: resources -->
+      <div id="center-bottom">
+        <div id="resource-bar">
+          <div class="resource">
+            <span class="resource-icon">💰</span>
+            <span id="gold-display">0</span>
+          </div>
+          <div class="resource">
+            <span class="resource-icon">🔮</span>
+            <span id="mana-display">0</span>
+          </div>
+          <div class="resource" style="margin-left:auto">
+            <span style="font-size:5px;color:var(--dim)" id="floor-display">Etage 1</span>
+          </div>
+          <div class="resource">
+            <span style="font-size:5px;color:var(--dim)" id="misses-display">Fehlversuche: 0/3</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /#center-panel -->
+
+    <!-- ═══════════════ RIGHT PANEL ═══════════════ -->
+    <div id="right-panel" class="panel">
+      <!-- Hero portrait -->
+      <div id="portrait-frame">
+        <div id="hero-portrait">🧙</div>
+        <div id="hero-name">HELD</div>
+        <div id="hero-level">LV 1 · XP 0/50</div>
+      </div>
+
+      <!-- HP bar -->
+      <div class="stat-bar-row">
+        <div class="bar-label"><span>HP</span><span id="hp-label">100/100</span></div>
+        <div class="bar-track"><div class="bar-fill hp-fill" id="hp-bar" style="width:100%"></div></div>
+      </div>
+      <!-- MP bar -->
+      <div class="stat-bar-row">
+        <div class="bar-label"><span>MP</span><span id="mp-label">50/50</span></div>
+        <div class="bar-track"><div class="bar-fill mp-fill" id="mp-bar" style="width:100%"></div></div>
+      </div>
+
+      <!-- Stats grid -->
+      <div id="stats-grid">
+        <div class="stat-cell">ATK<span class="stat-val" id="stat-atk">10</span></div>
+        <div class="stat-cell">DEF<span class="stat-val" id="stat-def">5</span></div>
+        <div class="stat-cell">MAG<span class="stat-val" id="stat-mag">8</span></div>
+        <div class="stat-cell">BLK<span class="stat-val" id="stat-blk">0</span></div>
+        <div class="stat-cell">CMB<span class="stat-val" id="stat-combo">0</span></div>
+        <div class="stat-cell">XP<span class="stat-val" id="stat-xp">0</span></div>
+      </div>
+
+      <!-- Status effects -->
+      <div id="status-effects"></div>
+
+      <!-- Action buttons -->
+      <div id="action-slots">
+        <button class="action-btn" id="btn-endturn" onclick="endTurn()" title="Runde beenden">
+          ⏩<span class="btn-label">ENDE</span>
+        </button>
+        <button class="action-btn" id="btn-flee" onclick="flee()" title="Fliehen">
+          🏃<span class="btn-label">FLEE</span>
+        </button>
+        <button class="action-btn" onclick="openDeck()" title="Deck ansehen">
+          📖<span class="btn-label">DECK</span>
+        </button>
+        <button class="action-btn" id="btn-wait" onclick="waitTurn()" title="Warten">
+          ⏳<span class="btn-label">WAIT</span>
+        </button>
+      </div>
+
+      <!-- Item quick use -->
+      <div id="item-quickuse"></div>
+    </div><!-- /#right-panel -->
+
+  </div><!-- /#game -->
+
+  <!-- Service Worker registration for PWA -->
+  <script>
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    }
+  </script>
+
+  <!-- Load scripts in dependency order -->
+  <script src="js/data.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/game.js"></script>
+
+</body>
+</html>
