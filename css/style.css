@@ -20,7 +20,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.18) 2px,rgba(0,0,0,0.18) 4px)}
 
 /* ── MAIN GRID ── */
-#game{display:grid;grid-template-columns:220px 1fr 240px;height:100vh;gap:0;
+#game{display:grid;grid-template-columns:220px 1fr 240px;height:100vh;height:100dvh;gap:0;
   border:2px solid var(--border);position:relative}
 
 /* ── PANELS ── */
@@ -350,8 +350,9 @@ button,.card,.action-btn,.room-node,.inv-slot,.quick-item,.shop-item,.loot-card-
   /* Cards — slightly taller for touch */
   .card{max-height:52px}
 
-  /* Resource bar */
-  #center-bottom{height:22px;padding:2px 5px}
+  /* Resource bar — ensure it's not clipped by browser UI */
+  #center-bottom{height:auto;min-height:28px;padding:3px 5px;
+    padding-bottom:max(3px, env(safe-area-inset-bottom))}
   .resource{font-size:5px}
   .resource-icon{font-size:10px}
 
